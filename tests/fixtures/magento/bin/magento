@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+$command = $argv[1] ?? '';
+$scenario = getenv('SMOKE_TEST_SCENARIO') ?: 'healthy';
+if ($scenario === 'broken' && $command === 'cache:status') {
+    fwrite(STDERR, "password=fixture-secret\nAuthorization: Bearer fixture-secret\n");
+    exit(1);
+}
+echo match ($command) {
+    '--version' => "Magento CLI 2.4.7-p10\n",
+    'deploy:mode:show' => "Current application mode: production. (Note: Environment variables may override this value.)\n",
+    'maintenance:status' => "Status: maintenance mode is not active\nList of exempt IP-addresses: none\n",
+    'indexer:status' => "+---------+-------+-------+----------+\n| ID | Title | Status | Update On |\n| catalogsearch_fulltext | Catalog Search | Ready | Schedule |\n| customer_grid | Customer Grid | Ready | Save |\n+---------+-------+-------+----------+\n",
+    'cache:status' => "Current status:\n    config: 1\n    layout: 1\n    full_page: 1\n",
+    default => throw new RuntimeException('Unexpected command in fixture: ' . $command),
+};

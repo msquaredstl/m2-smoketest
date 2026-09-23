@@ -1,0 +1,85 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+use M2Smoke\{Budget, Config, Environment, Options, Redactor, Report, Runner};
+
+if (PHP_VERSION_ID < 80200) {
+    fwrite(STDERR, "m2-smoketest requires PHP 8.2 or later.\n");
+    exit(3);
+}
+$autoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (!is_file($autoload)) {
+    fwrite(STDERR, "Run composer install inside m2-smoketest first.\n");
+    exit(3);
+}
+require $autoload;
+$options = ['format' => 'text', 'verbose' => false];
+$redactor = new Redactor();
+try {
+    $options = Options::parse(array_slice($argv, 1));
+    if ($options['help']) {
+        echo <<<'HELP'
+Usage: php bin/m2-smoketest [options]
+
+  --env=FILE           .env file (default: utility directory/.env)
+  --root=PATH          Magento root (otherwise search parent directories)
+  --config=FILE        YAML configuration for assertions/thresholds
+  --url=URL            Override environment base URL
+  --since="15 minutes" Log lookback, or past ISO-8601 timestamp with timezone
+  --format=text|json   Output format
+  -v, --verbose       Detailed diagnostics on warnings/failures
+  --log=NEW_FILE       Save redacted diagnostic JSONL (exclusive, private file)
+  --fail-on-warning   Return exit 1 for warnings (default: exit 0)
+  -h, --help          Show help
+
+Exit: 0 pass/warnings, 1 strict warnings, 2 failed checks, 3 tool/configuration error.
+Configuration precedence: defaults < YAML < .env/OS environment < CLI.
+Reads only: no reindex, cache flush, deployment changes, carts, or orders.
+
+HELP;
+        exit(0);
+    }
+    $envPath = $options['env'] ?? dirname(__DIR__) . '/.env';
+    Environment::load($envPath, isset($options['env']));
+    $secrets = [];
+    foreach (array_merge($_SERVER, $_ENV, getenv()) as $key => $value) {
+        if (preg_match('/PASSWORD|PASSWD|SECRET|TOKEN|API_KEY|M2_SMOKE_HTTP_USER/i', (string) $key) && is_string($value)) {
+            $secrets[] = $value;
+        }
+    }
+    $redactor = new Redactor($secrets);
+    $configPath = $options['config'] ?? Environment::value('M2_SMOKE_CONFIG');
+    if (!isset($options['config']) && $configPath && !str_starts_with($configPath, '/') && !preg_match('/^[A-Za-z]:[\\\\\/]/', $configPath)) {
+        $configPath = dirname($envPath) . '/' . $configPath;
+    }
+    $config = Environment::apply(Config::load($configPath ?: null));
+    if (isset($options['url'])) {
+        $config['base_url'] = $options['url'];
+    }
+    Config::validate($config);
+    $root = Config::root($options['root'] ?? Environment::value('M2_SMOKE_ROOT'), getcwd());
+    foreach (['curl', 'dom'] as $extension) {
+        if (!extension_loaded($extension)) {
+            throw new RuntimeException("Required PHP extension missing: $extension.");
+        }
+    }
+    $since = Config::since($options['since'] ?? null, $config['logs']['lookback_minutes']);
+    $report = new Report($redactor, $options['log'] ?? null);
+    $runner = new Runner($root, $config, $report, new Budget($config['run_timeout']), $since);
+    $runner->run();
+    echo $report->render($options['format'], $options['verbose']);
+    exit($report->exitCode($options['fail-on-warning']));
+} catch (Throwable $error) {
+    // YAML/dotenv parse errors can echo secret source lines. Never print those.
+    $message = $error instanceof \Symfony\Component\Yaml\Exception\ParseException ||
+        $error instanceof \Symfony\Component\Dotenv\Exception\FormatException
+        ? 'Cannot parse configuration; check YAML/.env syntax (source values omitted).'
+        : $redactor->clean($error->getMessage());
+    if ($options['format'] === 'json') {
+        echo json_encode(['schema_version' => 1, 'status' => 'ERROR', 'error' => $message], JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
+    } else {
+        fwrite(STDERR, "ERROR: $message\n");
+    }
+    exit(3);
+}

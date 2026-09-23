@@ -1,0 +1,42 @@
+base_url: null
+expected_mode: production
+command_timeout: 30
+run_timeout: 120
+http:
+  timeout: 10
+  max_assets: 60
+  max_body_bytes: 2097152
+  username_env: M2_SMOKE_HTTP_USER
+  password_env: M2_SMOKE_HTTP_PASSWORD
+indexers:
+  fail_on_invalid: true
+  ignore: []
+cache:
+  ignore: []
+cron:
+  enabled: true
+  stale_after_minutes: 10
+  lookback_minutes: 60
+  max_failures: 0
+  max_overdue: 0
+logs:
+  lookback_minutes: 15
+  max_bytes: 2097152
+  files:
+    - var/log/system.log
+    - var/log/exception.log
+pages:
+  homepage:
+    type: homepage
+    path: /
+    contains: ['</html>']
+    assets: true
+  category:
+    type: category
+    path: null
+  product:
+    type: product
+    path: null
+  search:
+    type: search
+    path: null

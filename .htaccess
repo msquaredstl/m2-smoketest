@@ -1,0 +1,2 @@
+# Defense in depth for Apache; the Magento web root should be pub/.
+Require all denied
