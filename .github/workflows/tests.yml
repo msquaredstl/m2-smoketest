@@ -22,5 +22,8 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict --no-check-lock
       - run: composer install --no-interaction --prefer-dist
+      - name: Dependency lock snapshot
+        if: matrix.php == '8.2'
+        run: cat composer.lock
       - run: composer lint
       - run: composer test
