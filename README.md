@@ -182,6 +182,6 @@ composer test
 
 GitHub Actions checks PHP 8.2, 8.3 and 8.4 using fake Magento and a localhost HTTP server. Tests do not contact DTF endpoints or use a real Magento database. Coverage includes command restrictions, isolated cron reads, bounded output, timeouts, categories, dotenv precedence, HTTP/asset failures, redaction and exit codes.
 
-Composer resolves the maintained Symfony 6.4 line independently of Magento. The generated lock file is currently local and ignored; retain it with the deployed copy for repeatable reinstalls. CI checks current compatible dependencies each run.
+Composer uses a committed lock file for repeatable installations of the Symfony 6.4 dependency line, independently of Magento. Use composer install for deployments; review dependency updates separately.
 
 Manually verify Algolia results, navigation, configurable products, cart, Amasty checkout, Webkul fees, shipping, taxes, payment, order creation and confirmation email.

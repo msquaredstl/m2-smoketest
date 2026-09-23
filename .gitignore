@@ -1,5 +1,4 @@
 /vendor/
-/composer.lock
 /.magento-smoke.yml
 /config/*.local.yml
 /reports/

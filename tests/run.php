@@ -120,6 +120,18 @@ test('subprocess errors and timeouts preserve diagnostic status', function () us
     $r = $commands->execute([PHP_BINARY, '-r', 'sleep(3);']);
     check($r['timeout'] && $r['exit'] === 124);
 });
+test('Magento subprocesses do not inherit utility credentials or autoloaded classes', function () use ($fixture) {
+    $_ENV['M2_SMOKE_HTTP_PASSWORD'] = 'must-not-leak';
+    $_SERVER['M2_SMOKE_HTTP_PASSWORD'] = 'must-not-leak';
+    try {
+        $commands = new Commands($fixture, new Budget(10), 5);
+        $r = $commands->execute([PHP_BINARY, '-r',
+            'echo json_encode([getenv("M2_SMOKE_HTTP_PASSWORD"), class_exists("M2Smoke\\\\Runner", false)]);']);
+        check($r['exit'] === 0 && json_decode($r['stdout'], true) === [false, false]);
+    } finally {
+        unset($_ENV['M2_SMOKE_HTTP_PASSWORD'], $_SERVER['M2_SMOKE_HTTP_PASSWORD']);
+    }
+});
 test('command output is bounded and truncation detected', function () use ($fixture) {
     $commands = new Commands($fixture, new Budget(10), 5);
     $r = $commands->execute([PHP_BINARY, '-r', 'echo str_repeat("x", 100000);']);
