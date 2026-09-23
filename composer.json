@@ -1,0 +1,27 @@
+{
+  "name": "msquaredstl/m2-smoketest",
+  "description": "Read-mostly Magento 2 post-deployment diagnostics",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.2",
+    "ext-curl": "*",
+    "ext-dom": "*",
+    "symfony/process": "^6.4",
+    "symfony/yaml": "^6.4",
+    "symfony/dotenv": "^6.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "M2Smoke\\": "src/"
+    }
+  },
+  "scripts": {
+    "test": "php tests/run.php",
+    "lint": "php tests/lint.php"
+  },
+  "config": {
+    "allow-plugins": false,
+    "sort-packages": true
+  }
+}

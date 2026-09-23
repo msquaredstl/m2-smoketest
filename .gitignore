@@ -1,0 +1,8 @@
+/vendor/
+/.magento-smoke.yml
+/config/*.local.yml
+/reports/
+*.log
+/.env
+/.env.*
+!/.env.example

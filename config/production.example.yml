@@ -1,0 +1,2 @@
+# Copy to config/production.local.yml and fill in known-good paths.
+base_url: https://dtfdistributors.com/
